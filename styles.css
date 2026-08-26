@@ -378,7 +378,8 @@ ul { list-style: none; margin: 0; padding: 0; }
 
 /* Centered title + block, used on Stack and Experiência sections */
 #stack .section__title,
-#experiencia .section__title {
+#experiencia .section__title,
+#curriculo .section__title {
   max-width: 640px;
   margin-left: auto;
   margin-right: auto;
@@ -495,7 +496,7 @@ ul { list-style: none; margin: 0; padding: 0; }
 }
 
 .stack-learning {
-  margin: 36px 0 0;
+  margin: 36px auto 0;
   max-width: var(--container);
   padding: 18px 20px;
   background: var(--bg);
