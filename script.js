@@ -3,60 +3,138 @@
 // ==========================================================================
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const bootSequence = [
-  { text: 'public class Diego {' },
-  { text: '    public static void main(String[] args) {' },
-  { text: '        System.out.println("Desenvolvedor Full Stack em formação");' },
-  { text: '    }' },
-  { text: '}' },
-];
-
 // ==========================================================================
-// Boot sequence typing animation
+// Generic typing engine (supports colored tokens, preserved across chars)
+// tokens: [{ text: 'algo', cls: 'fc-kw' }, { text: '\n' }, ...]
+// cls omitted/undefined = default color (inherits from container)
+// '\n' inside text renders as a line break
 // ==========================================================================
-function runBootSequence() {
-  const el = document.getElementById('bootLines');
-  const nameEl = document.getElementById('heroName');
+function buildTypedHTML(tokens, count) {
+  let html = '';
+  let curCls = null;
+  let buffer = '';
+  let seen = 0;
 
-  if (!el) return;
+  function flush() {
+    if (!buffer) return;
+    html += curCls ? `<span class="${curCls}">${buffer}</span>` : buffer;
+    buffer = '';
+  }
+
+  outer:
+  for (const token of tokens) {
+    const cls = token.cls || null;
+    for (const ch of token.text) {
+      if (seen >= count) break outer;
+      if (ch === '\n') {
+        flush();
+        html += '<br>';
+        curCls = null;
+      } else {
+        if (cls !== curCls) { flush(); curCls = cls; }
+        buffer += ch;
+      }
+      seen++;
+    }
+  }
+  flush();
+  return html;
+}
+
+function tokensLength(tokens) {
+  return tokens.reduce((n, t) => n + t.text.length, 0);
+}
+
+function typeTokens(el, tokens, opts = {}) {
+  const { charDelayMin = 14, charDelayMax = 32, linePause = 90, onDone } = opts;
+  const total = tokensLength(tokens);
 
   if (prefersReducedMotion) {
-    el.textContent = bootSequence.map(l => l.text).join('\n');
-    nameEl.classList.add('is-visible');
+    el.innerHTML = buildTypedHTML(tokens, total);
+    onDone && onDone();
     return;
   }
 
-  let lineIndex = 0;
-  let charIndex = 0;
-  let currentText = '';
+  // Precompute the flat char list with their source char (to detect newlines for pausing)
+  const flatChars = [];
+  tokens.forEach(t => { for (const ch of t.text) flatChars.push(ch); });
 
-  function typeChar() {
-    if (lineIndex >= bootSequence.length) {
-      nameEl.classList.add('is-visible');
-      return;
-    }
+  let i = 0;
+  function step() {
+    if (i >= total) { onDone && onDone(); return; }
+    i++;
+    el.innerHTML = buildTypedHTML(tokens, i);
+    const wasNewline = flatChars[i - 1] === '\n';
+    setTimeout(step, wasNewline ? linePause : charDelayMin + Math.random() * (charDelayMax - charDelayMin));
+  }
+  step();
+}
 
-    const line = bootSequence[lineIndex];
+// ==========================================================================
+// Hero: Java snippet typing
+// ==========================================================================
+function runHeroTyping() {
+  const el = document.getElementById('bootLines');
+  const nameEl = document.getElementById('heroName');
+  if (!el) return;
 
-    if (charIndex < line.text.length) {
-      currentText += line.text[charIndex];
-      el.textContent = getDisplayText();
-      charIndex++;
-      setTimeout(typeChar, 14 + Math.random() * 18);
-    } else {
-      lineIndex++;
-      charIndex = 0;
-      currentText += '\n';
-      setTimeout(typeChar, 90);
-    }
+  const tokens = [
+    { text: 'public class Diego {\n' },
+    { text: '    public static void main(String[] args) {\n' },
+    { text: '        System.out.println("Desenvolvedor Full Stack em formação");\n' },
+    { text: '    }\n' },
+    { text: '}' },
+  ];
+
+  typeTokens(el, tokens, {
+    onDone: () => nameEl && nameEl.classList.add('is-visible'),
+  });
+}
+
+// ==========================================================================
+// Footer: Java snippet typing (colored), triggered on scroll into view
+// ==========================================================================
+function initFooterTyping() {
+  const el = document.getElementById('footerCode');
+  if (!el) return;
+
+  const year = new Date().getFullYear();
+
+  const tokens = [
+    { text: 'public class ', cls: 'fc-kw' },
+    { text: 'Rodape' , cls: 'fc-cls' },
+    { text: ' {\n' },
+    { text: '\u00A0\u00A0' },
+    { text: 'public static void', cls: 'fc-kw' },
+    { text: ' ' },
+    { text: 'main', cls: 'fc-fn' },
+    { text: '(String[] args) {\n' },
+    { text: '\u00A0\u00A0\u00A0\u00A0System.out.' },
+    { text: 'println', cls: 'fc-fn' },
+    { text: '(' },
+    { text: `"feito com café, paciência e um pouco de PowerShell — ${year}"`, cls: 'fc-str' },
+    { text: ');\n' },
+    { text: '\u00A0\u00A0}\n' },
+    { text: '}' },
+  ];
+
+  const run = () => typeTokens(el, tokens, { charDelayMin: 10, charDelayMax: 22, linePause: 70 });
+
+  if (prefersReducedMotion || !('IntersectionObserver' in window)) {
+    run();
+    return;
   }
 
-  function getDisplayText() {
-    const done = bootSequence.slice(0, lineIndex).map(l => l.text).join('\n');
-    return done + (done ? '\n' : '') + currentText.split('\n').pop();
-  }
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        run();
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.3 });
 
-  typeChar();
+  observer.observe(el);
 }
 
 // ==========================================================================
@@ -110,14 +188,6 @@ function initScrollReveal() {
 }
 
 // ==========================================================================
-// Footer year
-// ==========================================================================
-function setFooterYear() {
-  const el = document.getElementById('year');
-  if (el) el.textContent = new Date().getFullYear();
-}
-
-// ==========================================================================
 // Lightbox for project screenshots
 // ==========================================================================
 function openLightbox(src) {
@@ -140,8 +210,8 @@ function closeLightbox() {
 // Init
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
-  runBootSequence();
+  runHeroTyping();
+  initFooterTyping();
   initMobileNav();
   initScrollReveal();
-  setFooterYear();
 });
