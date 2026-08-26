@@ -112,7 +112,7 @@ function initFooterTyping() {
     { text: '\u00A0\u00A0\u00A0\u00A0System.out.' },
     { text: 'println', cls: 'fc-fn' },
     { text: '(' },
-    { text: `"feito com café, paciência e um pouco de PowerShell — ${year}"`, cls: 'fc-str' },
+    { text: `"feito com café, paciência e um pouco de estudo — ${year}"`, cls: 'fc-str' },
     { text: ');\n' },
     { text: '\u00A0\u00A0}\n' },
     { text: '}' },
