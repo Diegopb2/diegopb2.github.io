@@ -81,7 +81,7 @@ function runHeroTyping() {
   const tokens = [
     { text: 'public class Diego {\n' },
     { text: '    public static void main(String[] args) {\n' },
-    { text: '        System.out.println("Desenvolvedor Full Stack em formação");\n' },
+    { text: '        System.out.println("Desenvolvedor Full Stack");\n' },
     { text: '    }\n' },
     { text: '}' },
   ];
